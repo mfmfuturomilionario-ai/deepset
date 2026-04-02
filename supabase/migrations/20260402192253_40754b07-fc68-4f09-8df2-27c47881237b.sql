@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_responses ADD CONSTRAINT diagnostic_responses_user_id_key UNIQUE (user_id);
