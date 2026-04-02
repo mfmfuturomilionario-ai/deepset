@@ -1,1 +1,7 @@
 project_id = "qxerwubbzzzddsinnybd"
+
+[functions.ai-diagnostic]
+verify_jwt = false
+
+[functions.ai-report]
+verify_jwt = false
