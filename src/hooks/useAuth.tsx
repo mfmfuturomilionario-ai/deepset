@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,16 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [credits, setCredits] = useState(0);
+  const initialized = useRef(false);
 
   const fetchUserData = async (userId: string) => {
-    const [profileRes, roleRes, creditsRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, avatar_url, is_active').eq('user_id', userId).single(),
-      supabase.from('user_roles').select('role').eq('user_id', userId).single(),
-      supabase.from('credits').select('balance').eq('user_id', userId).single(),
-    ]);
-    if (profileRes.data) setProfile(profileRes.data);
-    if (roleRes.data) setIsAdmin(roleRes.data.role === 'admin');
-    if (creditsRes.data) setCredits(creditsRes.data.balance);
+    try {
+      const [profileRes, roleRes, creditsRes] = await Promise.all([
+        supabase.from('profiles').select('full_name, avatar_url, is_active').eq('user_id', userId).single(),
+        supabase.from('user_roles').select('role').eq('user_id', userId).single(),
+        supabase.from('credits').select('balance').eq('user_id', userId).single(),
+      ]);
+      if (profileRes.data) setProfile(profileRes.data);
+      if (roleRes.data) setIsAdmin(roleRes.data.role === 'admin');
+      if (creditsRes.data) setCredits(creditsRes.data.balance);
+    } catch (e) {
+      console.error('Error fetching user data:', e);
+    }
   };
 
   const refreshCredits = async () => {
@@ -45,12 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let mounted = true;
-
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         await fetchUserData(session.user.id);
       } else {
@@ -61,8 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
+    // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+      if (initialized.current) return;
+      initialized.current = true;
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -71,10 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
