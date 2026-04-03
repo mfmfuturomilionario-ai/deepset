@@ -94,7 +94,7 @@ export default function Protocol() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
-          <Calendar className="w-7 h-7 text-primary" /> Protocolo 21 Dias
+          <Calendar className="w-7 h-7 text-primary" /> DeepSet 21 Dias
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Sua jornada de transformação diária</p>
       </div>
