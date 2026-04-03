@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="w-8 h-8 gradient-orange rounded-lg flex items-center justify-center">
               <Flame className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-gradient text-lg">PROTOCOLO</span>
+            <span className="font-display font-bold text-gradient text-lg">DEEPSET</span>
           </div>
         </div>
 
