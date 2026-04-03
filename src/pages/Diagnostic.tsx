@@ -49,7 +49,23 @@ export default function Diagnostic() {
         body: { responses: answers },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for credit/rate limit errors in the response
+        if (error.message?.includes('402') || data?.error?.includes('Créditos')) {
+          toast.error('Créditos insuficientes! Contate o administrador.');
+          return;
+        }
+        if (error.message?.includes('429')) {
+          toast.error('Limite de requisições. Tente novamente em alguns segundos.');
+          return;
+        }
+        throw error;
+      }
+      
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
 
       // Save results
       await supabase.from('diagnostic_results').insert({

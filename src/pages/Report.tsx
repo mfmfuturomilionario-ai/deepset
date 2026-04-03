@@ -25,7 +25,22 @@ export default function Report() {
         body: {},
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('402') || data?.error?.includes('Créditos')) {
+          toast.error('Créditos insuficientes! São necessários 2 créditos.');
+          return;
+        }
+        if (error.message?.includes('429')) {
+          toast.error('Limite de requisições. Tente novamente em alguns segundos.');
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
       setReport(data.report);
       await refreshCredits();
       toast.success('Relatório gerado com sucesso!');
