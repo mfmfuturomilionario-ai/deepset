@@ -162,7 +162,7 @@ export default function Dashboard() {
       {/* Streak alert */}
       {streak === 0 && completedDays > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-4 border-destructive/30">
-          <p className="text-sm font-medium text-destructive">⚠️ Você está perdendo consistência! Volte ao protocolo hoje.</p>
+          <p className="text-sm font-medium text-destructive">⚠️ Você está perdendo consistência! Volte ao DeepSet hoje.</p>
         </motion.div>
       )}
 
