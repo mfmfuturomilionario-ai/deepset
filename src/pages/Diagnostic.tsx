@@ -71,9 +71,9 @@ export default function Diagnostic() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
-          <Brain className="w-7 h-7 text-primary" /> Diagnóstico Inicial
+          <Brain className="w-7 h-7 text-primary" /> Diagnóstico DeepSet
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Responda com profundidade. Quanto mais detalhes, melhor será sua análise.</p>
+        <p className="text-muted-foreground text-sm mt-1">Responda com profundidade. O sistema analisa em 4 camadas: sintoma, padrão, estrutura e raiz.</p>
       </div>
 
       <div className="space-y-2">

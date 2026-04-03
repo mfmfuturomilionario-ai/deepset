@@ -57,9 +57,9 @@ export default function PersonMap() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
-            <MapIcon className="w-7 h-7 text-primary" /> Meu Mapa
+            <MapIcon className="w-7 h-7 text-primary" /> Meu Mapa DeepSet
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Seu diagnóstico completo e personalizado</p>
+          <p className="text-muted-foreground text-sm mt-1">Diagnóstico em 4 camadas: sintoma, padrão, estrutura e raiz</p>
         </div>
         <Button variant="secondary" size="sm" onClick={() => window.print()}>
           <Download className="w-4 h-4 mr-1" /> Salvar

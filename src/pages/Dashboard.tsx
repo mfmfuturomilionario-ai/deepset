@@ -168,7 +168,7 @@ export default function Dashboard() {
 
       {completedDays > 0 && completedDays < 21 && (
         <div className="glass-card p-4">
-          <p className="text-sm text-muted-foreground">🔥 Faltam <span className="text-primary font-bold">{21 - completedDays}</span> dias para completar o protocolo!</p>
+          <p className="text-sm text-muted-foreground">🔥 Faltam <span className="text-primary font-bold">{21 - completedDays}</span> dias para completar o DeepSet!</p>
         </div>
       )}
     </div>
