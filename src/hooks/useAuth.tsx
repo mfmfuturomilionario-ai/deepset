@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [credits, setCredits] = useState(0);
-  const initialized = useRef(false);
+  
 
   const fetchUserData = async (userId: string) => {
     try {
