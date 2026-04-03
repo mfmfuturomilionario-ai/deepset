@@ -70,7 +70,7 @@ export default function Dashboard() {
             <Zap className="w-5 h-5 text-primary" />
             <div>
               <p className="font-medium">Comece pelo Diagnóstico</p>
-              <p className="text-sm text-muted-foreground">Complete seu diagnóstico inicial para desbloquear o protocolo personalizado.</p>
+              <p className="text-sm text-muted-foreground">Complete seu diagnóstico DeepSet para desbloquear o protocolo personalizado.</p>
             </div>
           </div>
         </motion.div>
