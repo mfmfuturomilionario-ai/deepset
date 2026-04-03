@@ -22,11 +22,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Deduct 2 credits for report
+    // Deduct 2 credits
     const { data: canDeduct } = await supabaseClient.rpc('deduct_credits', {
       _user_id: user.id,
       _amount: 2,
-      _description: 'Relatório Final AI'
+      _description: 'Relatório Final DeepSet AI'
     });
 
     if (!canDeduct) {
@@ -68,19 +68,31 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Você é um analista de alta performance. Gere um relatório final completo em português do Brasil.
+    const systemPrompt = `Você é o agente DeepSet — analista de alta performance. Gere um relatório final completo em português do Brasil.
+
+FRAMEWORK DE ANÁLISE:
+- Compare o padrão de bloqueio identificado no diagnóstico vs. o comportamento durante os 21 dias
+- Avalie a transição entre as 3 fases: Reset (dias 1-7), Recalibração (dias 8-14), Domínio (dias 15-21)
+- Identifique qual dos 5 perfis de execução o usuário demonstrou e como evoluiu
+- Analise consistência como indicador principal (não intensidade)
+
+SCORE DE DOMÍNIO:
+- Iniciante (0-5 dias): Ainda no padrão antigo
+- Inconsistente (6-11 dias): Em transição, oscilando entre padrões
+- Disciplinado (12-17 dias): Novo padrão emergindo com consistência
+- Alta Performance (18-21 dias): Domínio instalado, auto-governo funcional
 
 Retorne EXATAMENTE um JSON:
 {
-  "antes_vs_depois": "Comparação detalhada do estado antes e depois do protocolo",
-  "padroes_identificados": "Padrões comportamentais que emergiram durante os 21 dias",
-  "evolucao": "Análise da evolução ao longo do protocolo",
-  "pontos_fortes": "Pontos fortes demonstrados durante a jornada",
-  "areas_melhoria": "Áreas que ainda precisam de desenvolvimento",
-  "recomendacoes": "Recomendações estratégicas para manter a alta performance"
+  "antes_vs_depois": "Comparação detalhada do estado antes (diagnóstico) vs depois (21 dias) — padrão de bloqueio, perfil de execução, crenças",
+  "padroes_identificados": "Padrões comportamentais que emergiram: quais bloqueios foram superados, quais persistem, novos padrões instalados",
+  "evolucao": "Análise da evolução fase a fase: Reset → Recalibração → Domínio. Onde houve mais evolução e onde houve resistência",
+  "pontos_fortes": "Pontos fortes demonstrados — momentos de consistência, resiliência, decisões que quebraram o padrão antigo",
+  "areas_melhoria": "Áreas que ainda precisam de atenção — padrões residuais, gatilhos que ainda ativam o bloqueio",
+  "recomendacoes": "Recomendações estratégicas pós-protocolo para manter o novo padrão de alta performance"
 }`;
 
-    const userPrompt = `DIAGNÓSTICO INICIAL: ${JSON.stringify(diagnosis)}
+    const userPrompt = `DIAGNÓSTICO INICIAL DEEPSET: ${JSON.stringify(diagnosis)}
 PROGRESSO: ${completedDays}/21 dias completados
 DADOS DE PROGRESSO: ${JSON.stringify(progress.map((p: any) => ({ dia: p.day_number, concluido: p.completed, notas: p.notes })))}`;
 
@@ -94,7 +106,7 @@ DADOS DE PROGRESSO: ${JSON.stringify(progress.map((p: any) => ({ dia: p.day_numb
           type: "function",
           function: {
             name: "generate_report",
-            description: "Generate a final performance report",
+            description: "Generate a DeepSet final performance report",
             parameters: {
               type: "object",
               properties: {
@@ -118,6 +130,11 @@ DADOS DE PROGRESSO: ${JSON.stringify(progress.map((p: any) => ({ dia: p.day_numb
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit. Tente em breve." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Contate o administrador." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
       throw new Error("AI failed");
