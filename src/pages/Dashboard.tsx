@@ -60,7 +60,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Sua jornada de alta performance</p>
+        <p className="text-muted-foreground text-sm mt-1">Sua jornada DeepSet de alta performance</p>
       </div>
 
       {/* Alert if no diagnostic */}

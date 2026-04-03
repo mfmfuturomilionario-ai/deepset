@@ -12,7 +12,7 @@ const userNav = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/diagnostic', label: 'Diagnóstico', icon: Brain },
   { path: '/map', label: 'Meu Mapa', icon: Map },
-  { path: '/protocol', label: 'Protocolo 21', icon: Calendar },
+  { path: '/protocol', label: 'DeepSet 21', icon: Calendar },
   { path: '/progress', label: 'Progresso', icon: TrendingUp },
   { path: '/report', label: 'Relatório', icon: FileText },
   { path: '/settings', label: 'Configurações', icon: Settings },
