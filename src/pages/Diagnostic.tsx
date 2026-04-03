@@ -49,7 +49,23 @@ export default function Diagnostic() {
         body: { responses: answers },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for credit/rate limit errors in the response
+        if (error.message?.includes('402') || data?.error?.includes('Créditos')) {
+          toast.error('Créditos insuficientes! Contate o administrador.');
+          return;
+        }
+        if (error.message?.includes('429')) {
+          toast.error('Limite de requisições. Tente novamente em alguns segundos.');
+          return;
+        }
+        throw error;
+      }
+      
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
 
       // Save results
       await supabase.from('diagnostic_results').insert({
@@ -71,9 +87,9 @@ export default function Diagnostic() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
-          <Brain className="w-7 h-7 text-primary" /> Diagnóstico Inicial
+          <Brain className="w-7 h-7 text-primary" /> Diagnóstico DeepSet
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Responda com profundidade. Quanto mais detalhes, melhor será sua análise.</p>
+        <p className="text-muted-foreground text-sm mt-1">Responda com profundidade. O sistema analisa em 4 camadas: sintoma, padrão, estrutura e raiz.</p>
       </div>
 
       <div className="space-y-2">

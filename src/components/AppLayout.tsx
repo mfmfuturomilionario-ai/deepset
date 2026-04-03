@@ -12,7 +12,7 @@ const userNav = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/diagnostic', label: 'Diagnóstico', icon: Brain },
   { path: '/map', label: 'Meu Mapa', icon: Map },
-  { path: '/protocol', label: 'Protocolo 21', icon: Calendar },
+  { path: '/protocol', label: 'DeepSet 21', icon: Calendar },
   { path: '/progress', label: 'Progresso', icon: TrendingUp },
   { path: '/report', label: 'Relatório', icon: FileText },
   { path: '/settings', label: 'Configurações', icon: Settings },
@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="w-8 h-8 gradient-orange rounded-lg flex items-center justify-center">
               <Flame className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-gradient text-lg">PROTOCOLO</span>
+            <span className="font-display font-bold text-gradient text-lg">DEEPSET</span>
           </div>
         </div>
 

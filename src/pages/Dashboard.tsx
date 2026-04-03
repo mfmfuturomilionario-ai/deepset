@@ -60,7 +60,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Sua jornada de alta performance</p>
+        <p className="text-muted-foreground text-sm mt-1">Sua jornada DeepSet de alta performance</p>
       </div>
 
       {/* Alert if no diagnostic */}
@@ -70,7 +70,7 @@ export default function Dashboard() {
             <Zap className="w-5 h-5 text-primary" />
             <div>
               <p className="font-medium">Comece pelo Diagnóstico</p>
-              <p className="text-sm text-muted-foreground">Complete seu diagnóstico inicial para desbloquear o protocolo personalizado.</p>
+              <p className="text-sm text-muted-foreground">Complete seu diagnóstico DeepSet para desbloquear o protocolo personalizado.</p>
             </div>
           </div>
         </motion.div>
@@ -162,13 +162,13 @@ export default function Dashboard() {
       {/* Streak alert */}
       {streak === 0 && completedDays > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-4 border-destructive/30">
-          <p className="text-sm font-medium text-destructive">⚠️ Você está perdendo consistência! Volte ao protocolo hoje.</p>
+          <p className="text-sm font-medium text-destructive">⚠️ Você está perdendo consistência! Volte ao DeepSet hoje.</p>
         </motion.div>
       )}
 
       {completedDays > 0 && completedDays < 21 && (
         <div className="glass-card p-4">
-          <p className="text-sm text-muted-foreground">🔥 Faltam <span className="text-primary font-bold">{21 - completedDays}</span> dias para completar o protocolo!</p>
+          <p className="text-sm text-muted-foreground">🔥 Faltam <span className="text-primary font-bold">{21 - completedDays}</span> dias para completar o DeepSet!</p>
         </div>
       )}
     </div>
