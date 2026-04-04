@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          condition_type: string
+          condition_value: number
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          key: string
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          key: string
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           api_key: string
@@ -170,6 +233,86 @@ export type Database = {
         }
         Relationships: []
       }
+      phase_days: {
+        Row: {
+          action: string
+          challenge: string
+          created_at: string
+          day_number: number
+          id: string
+          phase_id: string
+          reflection: string
+          title: string
+        }
+        Insert: {
+          action: string
+          challenge: string
+          created_at?: string
+          day_number: number
+          id?: string
+          phase_id: string
+          reflection: string
+          title: string
+        }
+        Update: {
+          action?: string
+          challenge?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          phase_id?: string
+          reflection?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_days_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phases: {
+        Row: {
+          created_at: string
+          days_count: number
+          description: string
+          icon: string
+          id: string
+          key: string
+          name: string
+          sort_order: number
+          unlock_condition: string
+          unlock_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          days_count?: number
+          description: string
+          icon?: string
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+          unlock_condition?: string
+          unlock_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          days_count?: number
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
+          unlock_condition?: string
+          unlock_value?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -230,6 +373,79 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_phase_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          day_number: number
+          id: string
+          notes: string | null
+          phase_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          day_number: number
+          id?: string
+          notes?: string | null
+          phase_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          day_number?: number
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_phase_progress_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_progress: {
         Row: {
           completed: boolean
@@ -281,6 +497,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          best_streak: number
+          created_at: string
+          current_phase: string
+          id: string
+          level: number
+          total_days_completed: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          best_streak?: number
+          created_at?: string
+          current_phase?: string
+          id?: string
+          level?: number
+          total_days_completed?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          best_streak?: number
+          created_at?: string
+          current_phase?: string
+          id?: string
+          level?: number
+          total_days_completed?: number
+          updated_at?: string
+          user_id?: string
+          xp?: number
         }
         Relationships: []
       }
