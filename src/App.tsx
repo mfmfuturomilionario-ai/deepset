@@ -15,6 +15,8 @@ import ProgressPage from "@/pages/ProgressPage";
 import Report from "@/pages/Report";
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPanel from "@/pages/AdminPanel";
+import Achievements from "@/pages/Achievements";
+import Phases from "@/pages/Phases";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/diagnostic" element={<ProtectedRoute><AppLayout><Diagnostic /></AppLayout></ProtectedRoute>} />
             <Route path="/map" element={<ProtectedRoute><AppLayout><PersonMap /></AppLayout></ProtectedRoute>} />
             <Route path="/protocol" element={<ProtectedRoute><AppLayout><Protocol /></AppLayout></ProtectedRoute>} />
+            <Route path="/phases" element={<ProtectedRoute><AppLayout><Phases /></AppLayout></ProtectedRoute>} />
+            <Route path="/achievements" element={<ProtectedRoute><AppLayout><Achievements /></AppLayout></ProtectedRoute>} />
             <Route path="/progress" element={<ProtectedRoute><AppLayout><ProgressPage /></AppLayout></ProtectedRoute>} />
             <Route path="/report" element={<ProtectedRoute><AppLayout><Report /></AppLayout></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
