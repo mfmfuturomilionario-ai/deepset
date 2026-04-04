@@ -4,8 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Flame, Target, Zap, Calendar } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { TrendingUp, Flame, Target, Zap, Calendar, Trophy } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { XPBar } from '@/components/XPBar';
+import { useGameification } from '@/hooks/useGameification';
+import { Link } from 'react-router-dom';
 
 const scoreLabels = ['Iniciante', 'Inconsistente', 'Disciplinado', 'Alta Performance'];
 
@@ -28,6 +31,7 @@ function getStreak(progress: { day_number: number; completed: boolean }[]) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { stats, userAchievements, achievements, loading: gamLoading } = useGameification();
   const [progress, setProgress] = useState<any[]>([]);
   const [hasDiagnostic, setHasDiagnostic] = useState(false);
 
@@ -53,6 +57,10 @@ export default function Dashboard() {
     cumulative: progress.filter(p => p.day_number <= i + 1 && p.completed).length,
   }));
 
+  const recentAchievements = achievements
+    .filter(a => userAchievements.find(ua => ua.achievement_id === a.id))
+    .slice(0, 4);
+
   const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
   const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
@@ -62,6 +70,17 @@ export default function Dashboard() {
         <h1 className="text-2xl md:text-3xl font-display font-bold">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">Sua jornada DeepSet de alta performance</p>
       </div>
+
+      {/* XP Bar */}
+      {!gamLoading && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <XPBar xp={stats.xp} level={stats.level} />
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Alert if no diagnostic */}
       {!hasDiagnostic && (
@@ -130,6 +149,31 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {/* Recent achievements */}
+      {recentAchievements.length > 0 && (
+        <Card className="glass-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-display flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-primary" /> Conquistas Recentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {recentAchievements.map(ach => (
+                <div key={ach.id} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 flex-shrink-0">
+                  <span className="text-xl">{ach.icon}</span>
+                  <div>
+                    <p className="text-xs font-bold">{ach.title}</p>
+                    <p className="text-xs text-primary">+{ach.xp_reward} XP</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link to="/achievements" className="text-xs text-primary mt-2 block">Ver todas →</Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Chart */}
       <Card className="glass-card">
