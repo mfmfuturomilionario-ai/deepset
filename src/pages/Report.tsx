@@ -6,9 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { FileText, Download, Loader2 } from 'lucide-react';
+import { generateReportPDF } from '@/lib/pdf-generator';
 
 export default function Report() {
-  const { user, credits, refreshCredits } = useAuth();
+  const { user, credits, refreshCredits, profile } = useAuth();
   const [report, setReport] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -51,6 +52,11 @@ export default function Report() {
     }
   };
 
+  const handleDownloadPDF = () => {
+    if (!report) return;
+    generateReportPDF(report, profile?.full_name || user?.email || undefined);
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -86,8 +92,8 @@ export default function Report() {
       ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="secondary" size="sm" onClick={() => window.print()}>
-              <Download className="w-4 h-4 mr-1" /> Salvar PDF
+            <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-1" /> Download PDF Premium
             </Button>
           </div>
 

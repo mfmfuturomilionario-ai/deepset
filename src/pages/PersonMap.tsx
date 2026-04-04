@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Map as MapIcon, Download, Target, AlertTriangle, Compass, Lightbulb, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { generateMapPDF } from '@/lib/pdf-generator';
 
 interface Analysis {
   behavioral_analysis?: string;
@@ -16,7 +17,7 @@ interface Analysis {
 }
 
 export default function PersonMap() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +29,11 @@ export default function PersonMap() {
         setLoading(false);
       });
   }, [user]);
+
+  const handleDownloadPDF = () => {
+    if (!analysis) return;
+    generateMapPDF(analysis as unknown as Record<string, string>, profile?.full_name || user?.email || undefined);
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -61,8 +67,8 @@ export default function PersonMap() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Diagnóstico em 4 camadas: sintoma, padrão, estrutura e raiz</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => window.print()}>
-          <Download className="w-4 h-4 mr-1" /> Salvar
+        <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
+          <Download className="w-4 h-4 mr-1" /> PDF Premium
         </Button>
       </div>
 

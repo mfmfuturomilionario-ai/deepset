@@ -4,15 +4,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Brain, Map, Calendar, TrendingUp, FileText,
-  Settings, Shield, Menu, X, LogOut, Flame, Coins
+  Settings, Shield, Menu, X, LogOut, Flame, Coins, Trophy, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AICoach } from '@/components/AICoach';
 
 const userNav = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/diagnostic', label: 'Diagnóstico', icon: Brain },
   { path: '/map', label: 'Meu Mapa', icon: Map },
   { path: '/protocol', label: 'DeepSet 21', icon: Calendar },
+  { path: '/phases', label: 'Fases', icon: Layers },
+  { path: '/achievements', label: 'Conquistas', icon: Trophy },
   { path: '/progress', label: 'Progresso', icon: TrendingUp },
   { path: '/report', label: 'Relatório', icon: FileText },
   { path: '/settings', label: 'Configurações', icon: Settings },
@@ -120,6 +123,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+
+      {/* AI Coach floating button */}
+      <AICoach />
     </div>
   );
 }
