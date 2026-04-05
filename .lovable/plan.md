@@ -1,77 +1,163 @@
-# DeepSet — Expansão Completa + PDF Premium
 
-## PARTE 1: Expansão do Sistema (Gamificação + Fases + IA)
 
-### 1A. Banco de Dados — Novas Tabelas
-Criar via migration:
-- `achievements` — badges/conquistas desbloqueáveis (id, key, title, description, icon, xp_reward, condition_type, condition_value)
-- `user_achievements` — conquistas do usuário (user_id, achievement_id, unlocked_at)
-- `user_stats` — XP, level, total_streak_best (user_id, xp, level, best_streak, total_days_completed, current_phase)
-- `phases` — fases do sistema (id, order, name, description, days_count, unlock_condition)
-- `phase_days` — dias de cada fase (id, phase_id, day_number, title, action, challenge, reflection)
-- `user_phase_progress` — progresso do usuário por fase (user_id, phase_id, day_number, completed, notes, completed_at)
-- `ai_conversations` — histórico de conversas com IA coach (user_id, messages JSONB, created_at)
+# DeepSet 360 --- Sistema Inteligente Multi-Area
 
-### 1B. Fases do Sistema
-1. **DeepSet Original** (21 dias) — Reset → Recalibração → Domínio
-2. **DeepSet Momentum** (14 dias) — Desbloqueia após completar Original. Foco em manter hábitos
-3. **DeepSet Mastery** (21 dias) — Nível avançado, desafios mais intensos
-4. **DeepSet Infinity** (contínuo) — Desafios semanais rotativos, nunca acaba
+## Visao Geral
 
-### 1C. Sistema de Gamificação
-- **XP**: Ganhar XP por completar dias, streaks, conquistas
-- **Níveis**: 1-50 com nomes temáticos (Despertar, Foco, Domínio, Mestre, Lenda)
-- **Conquistas**: ~15 badges (Primeiro Dia, Streak 7, Streak 21, Fase Completa, etc.)
-- **Streak System**: Multiplicador de XP por streak consecutiva
+Transformar o DeepSet de um protocolo fixo de 21 dias em um **sistema de inteligencia adaptativa 360** que cobre todas as areas da vida. O usuario escolhe a area de foco (negocio, financas, relacionamento, saude, etc.), a IA gera perguntas personalizadas, diagnostico, protocolo de 21 dias e fases --- tudo sob medida.
 
-### 1D. IA Coach Nativa
-- Chat com IA integrado ao contexto do usuário (diagnóstico + progresso)
-- Edge function `ai-coach` que recebe mensagem + contexto e responde
-- Custo: 1 crédito por conversa
-
-### 1E. Novas Páginas/Componentes
-- Refatorar Dashboard com XP, nível, conquistas
-- Nova seção "Conquistas" no menu
-- Nova seção "Fases" que mostra todas as fases e progresso
-- Chat com IA coach acessível de qualquer página
+O sistema se retroalimenta: acumula dados de todos os usuarios, aprende o que funciona, e fica progressivamente mais assertivo e personalizado.
 
 ---
 
-## PARTE 2: Sistema de PDF Premium
+## Arquitetura da Mudanca
 
-### 2A. Abordagem
-- Usar **reportlab** (Python) via script local para gerar PDF server-side
-- OU usar **jsPDF + html2canvas** client-side
-- **Escolha: Client-side com jsPDF** — mais prático, sem dependência de servidor Python
+```text
+ANTES (fixo):
+  Diagnostico (5 perguntas fixas) -> Mapa -> Protocolo 21 dias (fixo) -> Relatorio
 
-### 2B. Implementação
-- Instalar `jspdf` e `html2canvas`
-- Criar componente `PremiumPDFExporter` reutilizável
-- Gerar PDFs para:
-  - **Mapa da Pessoa** (diagnóstico completo)
-  - **Relatório Final** (evolução + análise)
-- Cada PDF terá:
-  - Capa com logo DEEPSET + subtítulo
-  - Página de abertura
-  - Sumário
-  - Conteúdo em seções com cards escuros, destaques laranja
-  - Footer com branding
-
-### 2C. Visual do PDF
-- Background: #0A0A0A
-- Cards: #1A1A1A com border sutil
-- Texto: #FFFFFF
-- Destaques: #FF6A00
-- Tipografia: hierarquia clara H1/H2/H3
-- Elementos visuais: barras, ícones, separadores
+DEPOIS (adaptativo):
+  Selecao de Area -> Perguntas Geradas por IA -> Diagnostico Personalizado
+  -> Protocolo 21 dias GERADO por IA (personalizado)
+  -> Fases geradas sob demanda -> Retroalimentacao continua
+```
 
 ---
 
-## Ordem de Execução
-1. Migration do banco (novas tabelas + seed de fases/conquistas)
-2. Sistema de PDF Premium (jsPDF)
-3. Gamificação (XP, níveis, conquistas)
-4. Novas fases além dos 21 dias
-5. IA Coach
-6. Dashboard expandido
-7. Testes e deploy
+## PARTE 1: Banco de Dados --- Novas Tabelas e Alteracoes
+
+### 1A. Nova tabela `life_areas`
+Areas de vida que o usuario pode escolher:
+- `id`, `key` (business, finance, relationships, health, spirituality, positioning, sales, habits, etc.)
+- `name`, `description`, `icon`, `sort_order`
+
+### 1B. Alterar `diagnostic_responses`
+Adicionar coluna `life_area` (text) para saber qual area o diagnostico aborda.
+
+### 1C. Alterar `diagnostic_results`
+Adicionar coluna `life_area` (text) + `generated_protocol` (jsonb) --- o protocolo de 21 dias gerado pela IA para aquela area.
+
+### 1D. Nova tabela `user_context`
+Perfil cumulativo do usuario que o sistema usa para se retroalimentar:
+- `user_id`, `area`, `key_insights` (jsonb), `history_summary` (text), `effectiveness_score` (float), `updated_at`
+- A cada diagnostico/progresso, o sistema atualiza este perfil
+
+### 1E. Nova tabela `system_patterns`
+Padroes do sistema aprendidos globalmente:
+- `id`, `area`, `pattern_type`, `pattern_data` (jsonb), `sample_size` (int), `effectiveness` (float), `updated_at`
+- Armazena o que funciona melhor por area, tipo de pessoa, etc.
+
+### 1F. Seed `life_areas`
+Inserir ~12 areas: Negocios, Financas, Relacionamentos, Saude, Espiritualidade, Posicionamento, Vendas, Habitos, Performance Mental, Lideranca, Carreira, Criatividade.
+
+---
+
+## PARTE 2: Fluxo de Diagnostico Adaptativo
+
+### 2A. Nova Tela de Selecao de Area (antes do Diagnostico)
+- Grid visual com as 12+ areas
+- Usuario seleciona uma area
+- Pode selecionar sub-metas (ex: "Negocios" -> meta de 10K/mes, construir MVP, esteira de produtos)
+- Informacoes adicionais contextuais (experiencia, situacao atual, meta financeira se aplicavel)
+
+### 2B. Perguntas Geradas pela IA
+- Ao selecionar area, o sistema envia para a Edge Function `ai-diagnostic` a area + sub-metas
+- A IA gera 5-7 perguntas PERSONALIZADAS para aquela area
+- Frontend exibe as perguntas geradas dinamicamente (nao mais hardcoded)
+
+### 2C. Diagnostico + Protocolo Gerado
+- A IA analisa as respostas E gera:
+  1. Diagnostico completo (4 camadas, como ja existe)
+  2. Protocolo de 21 dias PERSONALIZADO (titulo, acao, desafio, reflexao para cada dia)
+  3. Direcionamento estrategico especifico para a area
+- O protocolo gerado e salvo em `diagnostic_results.generated_protocol`
+
+### 2D. Atualizar Edge Function `ai-diagnostic`
+- Receber `life_area`, `sub_goals`, `context` alem de `responses`
+- Prompt adaptado por area (negocios: MVP, esteira, posicionamento; financas: dividas, investimento, etc.)
+- Tool call retorna `analysis` + `generated_protocol` (array de 21 dias)
+- Buscar `user_context` para enriquecer o prompt com historico
+
+---
+
+## PARTE 3: Protocolo Dinamico
+
+### 3A. Protocolo.tsx Adaptativo
+- Se o usuario tem `generated_protocol` no diagnostico, usa ele
+- Senao, fallback para `protocol_days` (tabela fixa atual)
+- Cada dia mostra a acao, desafio e reflexao gerados pela IA
+
+### 3B. Fases Geradas Sob Demanda
+- Ao completar os 21 dias, o sistema pode gerar automaticamente a proxima fase
+- Edge Function `ai-generate-phase` cria Momentum/Mastery baseado no progresso real
+- Insere em `phase_days` dinamicamente
+
+---
+
+## PARTE 4: Sistema de Retroalimentacao
+
+### 4A. Apos cada dia completado
+- Salvar nota + rating de dificuldade
+- Edge Function leve que atualiza `user_context` com insights cumulativos
+
+### 4B. Ao final do protocolo
+- IA analisa o que funcionou vs nao funcionou
+- Atualiza `system_patterns` com dados anonimizados
+- Sugere proximo foco baseado em lacunas
+
+### 4C. IA Coach Contextual
+- O Coach ja tem acesso ao diagnostico; agora tambem tera acesso a:
+  - Area de foco atual
+  - Protocolo personalizado
+  - Progresso dia-a-dia
+  - Historico cumulativo (`user_context`)
+- Respostas cada vez mais precisas
+
+---
+
+## PARTE 5: Notificacoes e Alertas
+
+### 5A. Sistema de Alertas no Dashboard
+- "Voce nao completou o dia de ontem --- sua streak esta em risco"
+- "Seu protocolo recomenda [acao X] hoje"
+- "Novo insight desbloqueado baseado no seu progresso"
+
+### 5B. Proximos Passos Inteligentes
+- Widget no Dashboard mostrando os 3 proximos passos recomendados pela IA
+- Baseado no progresso + area + user_context
+
+---
+
+## PARTE 6: Negocios e Metas Financeiras
+
+Quando a area for "Negocios" ou "Financas":
+- Perguntas incluem: experiencia, nicho, publico, meta financeira, canais
+- Protocolo gera acoes praticas: definir MVP, criar oferta, prospectar, posicionar
+- Mapa inclui: esteira de produtos, posicionamento, plano de receita
+- Coach orienta sobre execucao especifica do negocio
+
+---
+
+## Ordem de Execucao
+
+1. **Migration**: Criar `life_areas`, `user_context`, `system_patterns`, alterar `diagnostic_responses` e `diagnostic_results`
+2. **Seed**: Popular `life_areas` com 12 areas
+3. **Tela de Selecao de Area**: Nova pagina/step antes do diagnostico
+4. **Edge Function `ai-diagnostic` v2**: Receber area, gerar perguntas + protocolo personalizado
+5. **Diagnostic.tsx**: Fluxo dinamico (selecao -> perguntas geradas -> envio)
+6. **Protocol.tsx**: Usar protocolo gerado quando disponivel
+7. **Dashboard**: Alertas inteligentes + proximos passos
+8. **AI Coach**: Contexto expandido
+9. **Retroalimentacao**: user_context + system_patterns
+10. **Notificacoes visuais**: Streak alerts, recomendacoes
+
+---
+
+## Detalhes Tecnicos
+
+- **Edge Functions**: `ai-diagnostic` expandida, nova `ai-generate-phase`
+- **Frontend**: ~4 paginas alteradas (Diagnostic, Protocol, Dashboard, AI Coach)
+- **Banco**: 3 novas tabelas, 2 colunas novas
+- **IA**: Prompts adaptativos por area com tool calling para output estruturado
+- **Sem breaking changes**: Usuarios existentes continuam funcionando (fallback para protocolo fixo)
+
