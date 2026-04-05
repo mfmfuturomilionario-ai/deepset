@@ -159,6 +159,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          life_area: string | null
           responses: Json
           updated_at: string
           user_id: string
@@ -166,6 +167,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          life_area?: string | null
           responses?: Json
           updated_at?: string
           user_id: string
@@ -173,6 +175,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          life_area?: string | null
           responses?: Json
           updated_at?: string
           user_id?: string
@@ -183,20 +186,56 @@ export type Database = {
         Row: {
           analysis: Json
           created_at: string
+          generated_protocol: Json | null
           id: string
+          life_area: string | null
           user_id: string
         }
         Insert: {
           analysis?: Json
           created_at?: string
+          generated_protocol?: Json | null
           id?: string
+          life_area?: string | null
           user_id: string
         }
         Update: {
           analysis?: Json
           created_at?: string
+          generated_protocol?: Json | null
           id?: string
+          life_area?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      life_areas: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          key: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -373,6 +412,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_patterns: {
+        Row: {
+          area: string
+          created_at: string
+          effectiveness: number
+          id: string
+          pattern_data: Json
+          pattern_type: string
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          area?: string
+          created_at?: string
+          effectiveness?: number
+          id?: string
+          pattern_data?: Json
+          pattern_type?: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          effectiveness?: number
+          id?: string
+          pattern_data?: Json
+          pattern_type?: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string
@@ -401,6 +473,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_context: {
+        Row: {
+          area: string
+          created_at: string
+          effectiveness_score: number
+          history_summary: string
+          id: string
+          key_insights: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area?: string
+          created_at?: string
+          effectiveness_score?: number
+          history_summary?: string
+          id?: string
+          key_insights?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          effectiveness_score?: number
+          history_summary?: string
+          id?: string
+          key_insights?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_phase_progress: {
         Row: {
