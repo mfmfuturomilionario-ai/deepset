@@ -1,158 +1,270 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Brain, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Brain, ChevronRight, ChevronLeft, Loader2, Sparkles } from 'lucide-react';
 
-const questions = [
-  { key: 'pains', title: 'Suas Dores', desc: 'Quais são as principais dores que você sente hoje na sua vida pessoal e profissional?', placeholder: 'Descreva suas dores mais profundas...' },
-  { key: 'frustrations', title: 'Suas Frustrações', desc: 'O que te frustra constantemente? O que você já tentou e não funcionou?', placeholder: 'O que te tira do sério ou te desanima...' },
-  { key: 'goals', title: 'Seus Objetivos', desc: 'Onde você quer estar daqui 90 dias? E em 1 ano?', placeholder: 'Descreva seus objetivos com detalhes...' },
-  { key: 'identity', title: 'Sua Identidade', desc: 'Como você se descreve hoje? E como gostaria de ser descrito?', placeholder: 'Quem é você hoje vs. quem quer se tornar...' },
-  { key: 'fears', title: 'Seus Medos', desc: 'Qual é seu maior medo sobre o futuro? O que te paralisa?', placeholder: 'O que te impede de avançar...' },
-];
+interface LifeArea {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+interface DynamicQuestion {
+  key: string;
+  title: string;
+  question: string;
+  placeholder: string;
+}
+
+type Step = 'area' | 'subgoals' | 'loading_questions' | 'questions' | 'generating';
 
 export default function Diagnostic() {
   const { user, credits, refreshCredits } = useAuth();
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [generating, setGenerating] = useState(false);
   const navigate = useNavigate();
 
-  const progress = ((step + 1) / questions.length) * 100;
-  const currentQ = questions[step];
-  const canProceed = (answers[currentQ.key] || '').trim().length > 10;
+  const [step, setStep] = useState<Step>('area');
+  const [areas, setAreas] = useState<LifeArea[]>([]);
+  const [selectedArea, setSelectedArea] = useState<LifeArea | null>(null);
+  const [subGoals, setSubGoals] = useState('');
+  const [questions, setQuestions] = useState<DynamicQuestion[]>([]);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.from('life_areas').select('*').order('sort_order').then(({ data }) => {
+      if (data) setAreas(data as LifeArea[]);
+    });
+  }, []);
+
+  const handleSelectArea = (area: LifeArea) => {
+    setSelectedArea(area);
+    setStep('subgoals');
+  };
+
+  const handleGenerateQuestions = async () => {
+    if (!selectedArea) return;
+    setStep('loading_questions');
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-diagnostic', {
+        body: { mode: 'generate_questions', life_area: selectedArea.key, sub_goals: subGoals },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setQuestions(data.questions || []);
+      setCurrentQ(0);
+      setAnswers({});
+      setStep('questions');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao gerar perguntas');
+      setStep('subgoals');
+    }
+  };
 
   const handleGenerate = async () => {
-    if (!user) return;
+    if (!user || !selectedArea) return;
     if (credits < 1) {
-      toast.error('Créditos insuficientes! Contate o administrador.');
+      toast.error('Créditos insuficientes!');
       return;
     }
-
-    setGenerating(true);
+    setStep('generating');
+    setLoading(true);
     try {
       // Save responses
       await supabase.from('diagnostic_responses').upsert({
         user_id: user.id,
         responses: answers,
+        life_area: selectedArea.key,
       }, { onConflict: 'user_id' });
 
-      // Call AI edge function
+      // Call AI
       const { data, error } = await supabase.functions.invoke('ai-diagnostic', {
-        body: { responses: answers },
+        body: {
+          mode: 'diagnose',
+          responses: answers,
+          life_area: selectedArea.key,
+          sub_goals: subGoals,
+        },
       });
 
       if (error) {
-        // Check for credit/rate limit errors in the response
-        if (error.message?.includes('402') || data?.error?.includes('Créditos')) {
-          toast.error('Créditos insuficientes! Contate o administrador.');
-          return;
-        }
-        if (error.message?.includes('429')) {
-          toast.error('Limite de requisições. Tente novamente em alguns segundos.');
-          return;
-        }
+        if (error.message?.includes('402')) { toast.error('Créditos insuficientes!'); return; }
+        if (error.message?.includes('429')) { toast.error('Limite de requisições. Tente novamente.'); return; }
         throw error;
       }
-      
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
+      if (data?.error) { toast.error(data.error); return; }
 
-      // Save results
+      // Save results with generated protocol
       await supabase.from('diagnostic_results').insert({
         user_id: user.id,
         analysis: data.analysis,
+        life_area: selectedArea.key,
+        generated_protocol: data.generated_protocol,
       });
 
       await refreshCredits();
-      toast.success('Diagnóstico gerado com sucesso!');
+      toast.success('Diagnóstico e protocolo gerados com sucesso!');
       navigate('/map');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao gerar diagnóstico');
+      setStep('questions');
     } finally {
-      setGenerating(false);
+      setLoading(false);
     }
   };
+
+  const qProgress = questions.length > 0 ? ((currentQ + 1) / questions.length) * 100 : 0;
+  const canProceed = questions[currentQ] ? (answers[questions[currentQ].key] || '').trim().length > 10 : false;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
-          <Brain className="w-7 h-7 text-primary" /> Diagnóstico DeepSet
+          <Brain className="w-7 h-7 text-primary" /> Diagnóstico DeepSet 360
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Responda com profundidade. O sistema analisa em 4 camadas: sintoma, padrão, estrutura e raiz.</p>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Pergunta {step + 1} de {questions.length}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2" />
+        <p className="text-muted-foreground text-sm mt-1">
+          {step === 'area' && 'Escolha a área da sua vida que quer transformar'}
+          {step === 'subgoals' && `Área: ${selectedArea?.icon} ${selectedArea?.name}`}
+          {step === 'loading_questions' && 'Gerando perguntas personalizadas com IA...'}
+          {step === 'questions' && `${selectedArea?.icon} ${selectedArea?.name} — Pergunta ${currentQ + 1}/${questions.length}`}
+          {step === 'generating' && 'Gerando diagnóstico + protocolo personalizado...'}
+        </p>
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Card className="glass-card">
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <h2 className="text-lg font-display font-bold">{currentQ.title}</h2>
-                <p className="text-sm text-muted-foreground mt-1">{currentQ.desc}</p>
-              </div>
-              <Textarea
-                value={answers[currentQ.key] || ''}
-                onChange={e => setAnswers(prev => ({ ...prev, [currentQ.key]: e.target.value }))}
-                placeholder={currentQ.placeholder}
-                className="min-h-[150px] resize-none"
-              />
-              <p className="text-xs text-muted-foreground">Mínimo 10 caracteres</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="flex justify-between">
-        <Button
-          variant="secondary"
-          onClick={() => setStep(s => s - 1)}
-          disabled={step === 0}
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
-        </Button>
-
-        {step < questions.length - 1 ? (
-          <Button onClick={() => setStep(s => s + 1)} disabled={!canProceed}>
-            Próximo <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleGenerate}
-            disabled={!canProceed || generating}
-            className="gradient-orange text-primary-foreground"
-          >
-            {generating ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando análise...</>
-            ) : (
-              <><Brain className="w-4 h-4 mr-2" /> Gerar Diagnóstico (1 crédito)</>
-            )}
-          </Button>
+        {/* STEP 1: Area Selection */}
+        {step === 'area' && (
+          <motion.div key="area" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {areas.map(area => (
+                <button
+                  key={area.id}
+                  onClick={() => handleSelectArea(area)}
+                  className="glass-card p-4 text-left hover:border-primary/50 transition-all group"
+                >
+                  <span className="text-3xl block mb-2">{area.icon}</span>
+                  <p className="font-display font-bold text-sm group-hover:text-primary transition-colors">{area.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{area.description}</p>
+                </button>
+              ))}
+            </div>
+          </motion.div>
         )}
-      </div>
+
+        {/* STEP 2: Sub-goals */}
+        {step === 'subgoals' && (
+          <motion.div key="subgoals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <Card className="glass-card">
+              <CardContent className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-lg font-display font-bold">{selectedArea?.icon} {selectedArea?.name}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{selectedArea?.description}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Qual é sua meta principal nesta área?</label>
+                  <Textarea
+                    value={subGoals}
+                    onChange={e => setSubGoals(e.target.value)}
+                    placeholder="Ex: Faturar 10K/mês, sair das dívidas, melhorar comunicação, ter mais energia..."
+                    className="min-h-[100px] resize-none"
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <Button variant="secondary" onClick={() => { setStep('area'); setSelectedArea(null); }}>
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+                  </Button>
+                  <Button onClick={handleGenerateQuestions} disabled={subGoals.trim().length < 5}>
+                    <Sparkles className="w-4 h-4 mr-1" /> Gerar Perguntas com IA
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* STEP 3: Loading questions */}
+        {step === 'loading_questions' && (
+          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center py-16 space-y-4"
+          >
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full gradient-orange flex items-center justify-center animate-pulse">
+                <Brain className="w-8 h-8 text-primary-foreground" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              A IA está criando perguntas personalizadas<br />para a área <span className="text-primary font-bold">{selectedArea?.name}</span>...
+            </p>
+          </motion.div>
+        )}
+
+        {/* STEP 4: Questions */}
+        {step === 'questions' && questions[currentQ] && (
+          <motion.div key={`q-${currentQ}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Pergunta {currentQ + 1} de {questions.length}</span>
+                <span>{Math.round(qProgress)}%</span>
+              </div>
+              <Progress value={qProgress} className="h-2" />
+            </div>
+
+            <Card className="glass-card">
+              <CardContent className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-lg font-display font-bold">{questions[currentQ].title}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{questions[currentQ].question}</p>
+                </div>
+                <Textarea
+                  value={answers[questions[currentQ].key] || ''}
+                  onChange={e => setAnswers(prev => ({ ...prev, [questions[currentQ].key]: e.target.value }))}
+                  placeholder={questions[currentQ].placeholder}
+                  className="min-h-[150px] resize-none"
+                />
+                <p className="text-xs text-muted-foreground">Mínimo 10 caracteres</p>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-between mt-4">
+              <Button variant="secondary" onClick={() => currentQ === 0 ? setStep('subgoals') : setCurrentQ(c => c - 1)}>
+                <ChevronLeft className="w-4 h-4 mr-1" /> {currentQ === 0 ? 'Voltar' : 'Anterior'}
+              </Button>
+              {currentQ < questions.length - 1 ? (
+                <Button onClick={() => setCurrentQ(c => c + 1)} disabled={!canProceed}>
+                  Próximo <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              ) : (
+                <Button onClick={handleGenerate} disabled={!canProceed || loading} className="gradient-orange text-primary-foreground">
+                  <Brain className="w-4 h-4 mr-2" /> Gerar Diagnóstico (1 crédito)
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 5: Generating */}
+        {step === 'generating' && (
+          <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center py-16 space-y-4"
+          >
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground text-center">
+              Gerando diagnóstico em 4 camadas + protocolo<br />personalizado de 21 dias para <span className="text-primary font-bold">{selectedArea?.name}</span>...
+            </p>
+            <p className="text-xs text-muted-foreground">Isso pode levar até 30 segundos</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
