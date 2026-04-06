@@ -189,6 +189,8 @@ export type Database = {
           generated_protocol: Json | null
           id: string
           life_area: string | null
+          questions_asked: Json | null
+          rating: number | null
           user_id: string
         }
         Insert: {
@@ -197,6 +199,8 @@ export type Database = {
           generated_protocol?: Json | null
           id?: string
           life_area?: string | null
+          questions_asked?: Json | null
+          rating?: number | null
           user_id: string
         }
         Update: {
@@ -205,6 +209,8 @@ export type Database = {
           generated_protocol?: Json | null
           id?: string
           life_area?: string | null
+          questions_asked?: Json | null
+          rating?: number | null
           user_id?: string
         }
         Relationships: []
