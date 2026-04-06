@@ -49,6 +49,7 @@ serve(async (req) => {
       let finalApiUrl = apiUrl;
       let finalApiKey = apiKey;
       let model = llm.model || "google/gemini-3-flash-preview";
+      let isAnthropic = false;
 
       if (llm.provider !== 'lovable') {
         const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -56,11 +57,16 @@ serve(async (req) => {
         if (keyData) {
           finalApiKey = keyData.api_key;
           switch (llm.provider) {
-            case 'openai': finalApiUrl = "https://api.openai.com/v1/chat/completions"; model = model || "gpt-4o-mini"; break;
-            case 'groq': finalApiUrl = "https://api.groq.com/openai/v1/chat/completions"; model = model || "llama-3.3-70b-versatile"; break;
-            case 'deepseek': finalApiUrl = "https://api.deepseek.com/v1/chat/completions"; model = model || "deepseek-chat"; break;
-            case 'perplexity': finalApiUrl = "https://api.perplexity.ai/chat/completions"; model = model || "sonar"; break;
+            case 'openai': finalApiUrl = "https://api.openai.com/v1/chat/completions"; model = model === 'default' ? "gpt-4o-mini" : model; break;
+            case 'anthropic': finalApiUrl = "https://api.anthropic.com/v1/messages"; model = model === 'default' ? "claude-3-5-sonnet-20241022" : model; isAnthropic = true; break;
+            case 'google': finalApiUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"; model = model === 'default' ? "gemini-2.0-flash" : model; break;
+            case 'groq': finalApiUrl = "https://api.groq.com/openai/v1/chat/completions"; model = model === 'default' ? "llama-3.3-70b-versatile" : model; break;
+            case 'deepseek': finalApiUrl = "https://api.deepseek.com/v1/chat/completions"; model = model === 'default' ? "deepseek-chat" : model; break;
+            case 'perplexity': finalApiUrl = "https://api.perplexity.ai/chat/completions"; model = model === 'default' ? "sonar" : model; break;
           }
+        } else {
+          console.log(`No API key found for provider ${llm.provider}, falling back to Lovable AI`);
+          // Fallback to Lovable
         }
       }
 
