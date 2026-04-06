@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Map as MapIcon, Download, Target, AlertTriangle, Compass, Lightbulb, Shield } from 'lucide-react';
+import { Map as MapIcon, Download, Target, AlertTriangle, Compass, Lightbulb, Shield, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { generateMapPDF } from '@/lib/pdf-generator';
+import { DiagnosticHistory } from '@/components/DiagnosticHistory';
 
 interface Analysis {
   behavioral_analysis?: string;
@@ -20,6 +21,7 @@ export default function PersonMap() {
   const { user, profile } = useAuth();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -35,9 +37,7 @@ export default function PersonMap() {
     generateMapPDF(analysis as unknown as Record<string, string>, profile?.full_name || user?.email || undefined);
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-  }
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   if (!analysis) {
     return (
@@ -67,28 +67,37 @@ export default function PersonMap() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Diagnóstico em 4 camadas: sintoma, padrão, estrutura e raiz</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
-          <Download className="w-4 h-4 mr-1" /> PDF Premium
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setShowHistory(!showHistory)}>
+            <History className="w-4 h-4 mr-1" /> {showHistory ? 'Mapa' : 'Histórico'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
+            <Download className="w-4 h-4 mr-1" /> PDF Premium
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {sections.map((section, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card className="glass-card h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className={`text-base font-display flex items-center gap-2 ${section.color}`}>
-                  <section.icon className="w-5 h-5" />
-                  {section.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">{section.content || 'Informação não disponível'}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+      {showHistory && user ? (
+        <DiagnosticHistory userId={user.id} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {sections.map((section, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+              <Card className="glass-card h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className={`text-base font-display flex items-center gap-2 ${section.color}`}>
+                    <section.icon className="w-5 h-5" />
+                    {section.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{section.content || 'Informação não disponível'}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
