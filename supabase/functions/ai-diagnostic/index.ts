@@ -213,6 +213,18 @@ As perguntas devem escavar em 4 camadas: sintoma, padrão, estrutura e raiz.`;
       ? `\n\nCONTEXTO PRÉVIO:\nInsights: ${JSON.stringify(existingContext.key_insights)}\nHistórico: ${existingContext.history_summary}`
       : '';
 
+    // Get knowledge base context
+    const { data: knowledgeData } = await supabaseClient
+      .from('knowledge_base')
+      .select('title, content')
+      .in('area', [life_area || 'general', 'general'])
+      .eq('status', 'active')
+      .limit(5);
+
+    const knowledgeStr = knowledgeData && knowledgeData.length > 0
+      ? `\n\nBASE DE CONHECIMENTO DEEPSET:\n${knowledgeData.map((k: any) => `[${k.title}]: ${k.content.substring(0, 800)}`).join('\n\n')}`
+      : '';
+
     const areaSpecificInstructions = getAreaInstructions(life_area || 'general');
 
     const systemPrompt = `Você é o agente DeepSet 360 — um analista comportamental e estratégico de alta performance.
@@ -220,6 +232,7 @@ As perguntas devem escavar em 4 camadas: sintoma, padrão, estrutura e raiz.`;
 ÁREA DE FOCO: ${life_area || 'geral'}
 SUB-METAS: ${sub_goals || 'Não especificadas'}
 ${contextStr}
+${knowledgeStr}
 
 METODOLOGIA: Diagnóstico em 4 camadas progressivas:
 1. SINTOMA — o que o indivíduo descreve conscientemente
