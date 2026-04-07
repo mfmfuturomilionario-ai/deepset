@@ -74,9 +74,22 @@ serve(async (req) => {
         ? `\n\nCONTEXTO PRÉVIO DO USUÁRIO:\nInsights: ${JSON.stringify(existingContext.key_insights)}\nHistórico: ${existingContext.history_summary}`
         : '';
 
+      // Get knowledge base context
+      const { data: knowledgeData } = await supabaseClient
+        .from('knowledge_base')
+        .select('title, content')
+        .in('area', [life_area, 'general'])
+        .eq('status', 'active')
+        .limit(3);
+
+      const knowledgeStr = knowledgeData && knowledgeData.length > 0
+        ? `\n\nBASE DE CONHECIMENTO:\n${knowledgeData.map((k: any) => `[${k.title}]: ${k.content.substring(0, 500)}`).join('\n')}`
+        : '';
+
       const qPrompt = `Você é o agente DeepSet 360. O usuário escolheu a área "${life_area}".
 Sub-metas: ${sub_goals || 'Não especificadas'}
 ${contextStr}
+${knowledgeStr}
 
 Gere 5-7 perguntas profundas e personalizadas para diagnosticar a situação do usuário nesta área.
 
