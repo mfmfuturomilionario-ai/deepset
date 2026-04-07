@@ -10,11 +10,12 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, Coins, Brain, Plus, Minus, Search, Key, Settings, BarChart3 } from 'lucide-react';
+import { Shield, Users, Coins, Brain, Plus, Minus, Search, Key, Settings, BarChart3, BookOpen } from 'lucide-react';
 import { AdminAnalytics } from '@/components/AdminAnalytics';
+import { KnowledgeManager } from '@/components/KnowledgeManager';
 
 const LLM_PROVIDERS = [
-  { value: 'lovable', label: 'Global (Lovable AI Nativa)' },
+  { value: 'lovable', label: 'Global' },
   { value: 'openai', label: 'OpenAI (GPT)' },
   { value: 'anthropic', label: 'Anthropic (Claude)' },
   { value: 'google', label: 'Google (Gemini)' },
@@ -30,7 +31,7 @@ export default function AdminPanel() {
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [llmSettings, setLlmSettings] = useState<any[]>([]);
   const [creditAmount, setCreditAmount] = useState('10');
-  const [newApiKey, setNewApiKey] = useState({ provider: '', api_key: '' });
+  const [newApiKey, setNewApiKey] = useState({ provider: '', api_key: '', model: '' });
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -85,20 +86,63 @@ export default function AdminPanel() {
   };
 
   const handleSaveApiKey = async () => {
-    if (!newApiKey.provider || !newApiKey.api_key) { toast.error('Preencha todos os campos'); return; }
-    const { error } = await supabase.from('api_keys').upsert({ provider: newApiKey.provider, api_key: newApiKey.api_key, is_active: true });
-    if (error) { toast.error('Erro ao salvar'); return; }
-    toast.success('API Key salva!');
-    setNewApiKey({ provider: '', api_key: '' });
+    if (!newApiKey.provider || !newApiKey.api_key) { toast.error('Preencha provedor e API Key'); return; }
+    
+    // Save API key
+    const { error: keyError } = await supabase.from('api_keys').upsert(
+      { provider: newApiKey.provider, api_key: newApiKey.api_key, is_active: true },
+      { onConflict: 'provider' }
+    );
+    if (keyError) { toast.error('Erro ao salvar API Key'); return; }
+
+    // Auto-set as global LLM if model specified
+    if (newApiKey.model) {
+      const existing = llmSettings.find(s => s.scope === 'global');
+      if (existing) {
+        await supabase.from('llm_settings').update({ 
+          provider: newApiKey.provider, 
+          model: newApiKey.model, 
+          is_active: true 
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('llm_settings').insert({ 
+          scope: 'global' as any, 
+          provider: newApiKey.provider, 
+          model: newApiKey.model, 
+          is_active: true 
+        });
+      }
+    }
+
+    toast.success('API Key salva com sucesso!');
+    setNewApiKey({ provider: '', api_key: '', model: '' });
     fetchData();
+  };
+
+  const handleTestApiKey = async (provider: string) => {
+    toast.info('Testando conexão...');
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-diagnostic', {
+        body: { mode: 'generate_questions', life_area: 'general', sub_goals: 'teste de conexão' },
+      });
+      if (error) throw error;
+      if (data?.questions?.length > 0) {
+        toast.success(`✅ Conexão com ${provider} funcionando!`);
+      } else {
+        toast.warning('Resposta recebida mas sem perguntas geradas');
+      }
+    } catch (err: any) {
+      toast.error(`❌ Erro: ${err.message}`);
+    }
   };
 
   const handleSetGlobalLLM = async (provider: string) => {
     const existing = llmSettings.find(s => s.scope === 'global');
+    const defaultModel = provider === 'lovable' ? 'google/gemini-3-flash-preview' : 'default';
     if (existing) {
-      await supabase.from('llm_settings').update({ provider, is_active: true }).eq('id', existing.id);
+      await supabase.from('llm_settings').update({ provider, model: defaultModel, is_active: true }).eq('id', existing.id);
     } else {
-      await supabase.from('llm_settings').insert({ scope: 'global' as any, provider, model: 'default', is_active: true });
+      await supabase.from('llm_settings').insert({ scope: 'global' as any, provider, model: defaultModel, is_active: true });
     }
     toast.success('LLM global atualizado!');
     fetchData();
@@ -115,6 +159,18 @@ export default function AdminPanel() {
     fetchData();
   };
 
+  const getModelHints = (provider: string) => {
+    switch (provider) {
+      case 'openai': return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'];
+      case 'anthropic': return ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307'];
+      case 'google': return ['gemini-2.0-flash', 'gemini-1.5-pro'];
+      case 'groq': return ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'];
+      case 'deepseek': return ['deepseek-chat', 'deepseek-reasoner'];
+      case 'perplexity': return ['sonar', 'sonar-pro'];
+      default: return [];
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -127,7 +183,7 @@ export default function AdminPanel() {
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
           <Shield className="w-7 h-7 text-primary" /> Super Admin
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Gestão completa do sistema</p>
+        <p className="text-muted-foreground text-sm mt-1">Gestão completa do sistema DeepSet</p>
       </div>
 
       <Tabs defaultValue="analytics" className="space-y-4">
@@ -137,6 +193,7 @@ export default function AdminPanel() {
           <TabsTrigger value="credits" className="flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> Créditos</TabsTrigger>
           <TabsTrigger value="llm" className="flex items-center gap-1"><Brain className="w-3.5 h-3.5" /> LLMs</TabsTrigger>
           <TabsTrigger value="keys" className="flex items-center gap-1"><Key className="w-3.5 h-3.5" /> API Keys</TabsTrigger>
+          <TabsTrigger value="knowledge" className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Conhecimento</TabsTrigger>
         </TabsList>
 
         {/* ANALYTICS TAB */}
@@ -204,7 +261,11 @@ export default function AdminPanel() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{LLM_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Este provedor será usado por padrão para todos os usuários, a menos que um override seja definido.</p>
+              <p className="text-xs text-muted-foreground">
+                Provedor atual: <span className="text-primary font-bold">{LLM_PROVIDERS.find(p => p.value === (globalLLM?.provider || 'lovable'))?.label}</span>
+                {globalLLM?.model && globalLLM.model !== 'default' && <span> — Modelo: {globalLLM.model}</span>}
+              </p>
+              <p className="text-xs text-muted-foreground">Este provedor será usado por padrão para todos os usuários. Para usar provedores externos, adicione a API Key na aba "API Keys".</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
@@ -241,12 +302,23 @@ export default function AdminPanel() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Provedor</Label>
-                <Select value={newApiKey.provider} onValueChange={v => setNewApiKey(prev => ({ ...prev, provider: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <Select value={newApiKey.provider} onValueChange={v => setNewApiKey(prev => ({ ...prev, provider: v, model: '' }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o provedor..." /></SelectTrigger>
                   <SelectContent>{LLM_PROVIDERS.filter(p => p.value !== 'lovable').map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>API Key</Label><Input type="password" value={newApiKey.api_key} onChange={e => setNewApiKey(prev => ({ ...prev, api_key: e.target.value }))} placeholder="sk-..." /></div>
+              {newApiKey.provider && (
+                <div>
+                  <Label>Modelo (opcional)</Label>
+                  <Select value={newApiKey.model} onValueChange={v => setNewApiKey(prev => ({ ...prev, model: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Modelo padrão do provedor" /></SelectTrigger>
+                    <SelectContent>
+                      {getModelHints(newApiKey.provider).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button onClick={handleSaveApiKey} className="gradient-orange text-primary-foreground"><Key className="w-4 h-4 mr-2" /> Salvar API Key</Button>
             </CardContent>
           </Card>
@@ -254,7 +326,7 @@ export default function AdminPanel() {
             <CardHeader><CardTitle className="text-base font-display">Keys Configuradas</CardTitle></CardHeader>
             <CardContent>
               {apiKeys.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma API key configurada.</p>
+                <p className="text-sm text-muted-foreground">Nenhuma API key configurada. O sistema usa a IA Global (nativa) por padrão.</p>
               ) : (
                 <Table>
                   <TableHeader><TableRow><TableHead>Provedor</TableHead><TableHead>Key</TableHead><TableHead>Status</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
@@ -267,7 +339,10 @@ export default function AdminPanel() {
                           <Switch checked={k.is_active} onCheckedChange={async (v) => { await supabase.from('api_keys').update({ is_active: v }).eq('id', k.id); fetchData(); }} />
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="destructive" onClick={async () => { await supabase.from('api_keys').delete().eq('id', k.id); toast.success('Key removida'); fetchData(); }}>Remover</Button>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="secondary" onClick={() => handleTestApiKey(k.provider)}>Testar</Button>
+                            <Button size="sm" variant="destructive" onClick={async () => { await supabase.from('api_keys').delete().eq('id', k.id); toast.success('Key removida'); fetchData(); }}>Remover</Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -277,6 +352,9 @@ export default function AdminPanel() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* KNOWLEDGE TAB */}
+        <TabsContent value="knowledge"><KnowledgeManager /></TabsContent>
       </Tabs>
     </div>
   );
