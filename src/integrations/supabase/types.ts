@@ -215,6 +215,45 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_base: {
+        Row: {
+          area: string
+          content: string
+          created_at: string
+          id: string
+          source_type: string
+          source_url: string | null
+          status: string
+          title: string
+          updated_at: string
+          word_count: number
+        }
+        Insert: {
+          area?: string
+          content?: string
+          created_at?: string
+          id?: string
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          word_count?: number
+        }
+        Update: {
+          area?: string
+          content?: string
+          created_at?: string
+          id?: string
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          word_count?: number
+        }
+        Relationships: []
+      }
       life_areas: {
         Row: {
           created_at: string
